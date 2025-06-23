@@ -14,7 +14,7 @@ load_dotenv(override=True)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 PDF_PATH = BASE_DIR / "me" / "linkedin.pdf"
-SUMMARY_PATH = BASE_DIR / "me" / "summary.txt"
+SUMMARY_PATH = BASE_DIR / "config" / "prompt" / "summary.txt"
 
 record_user_schema = load_tool_schema("record_user_details.json")
 record_unknown_schema = load_tool_schema("record_unknown_question.json")
