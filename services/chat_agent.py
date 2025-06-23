@@ -1,6 +1,7 @@
 # api/me_agent.py
 
 from pathlib import Path
+import uuid
 from dotenv import load_dotenv
 from openai import OpenAI
 import json
@@ -9,6 +10,7 @@ import requests
 from pypdf import PdfReader
 
 from helper.load_tool_schema import load_tool_schema, load_template
+from services.firebase_service import get_chat_history, save_chat_history
 
 load_dotenv(override=True)
 
@@ -43,7 +45,11 @@ tools = [{"type": "function", "function": record_user_schema},
 
 class ChatAgent:
     def __init__(self):
+        print("DEBUG: message =", os.getenv("OPENAI_API_KEY"), flush=True)
+
         self.openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
         self.name = load_template("owner_name.txt")
         reader = PdfReader(str(PDF_PATH))
         self.linkedin = ""
@@ -78,7 +84,15 @@ class ChatAgent:
             linkedin=self.linkedin
         )
 
-    def chat(self, message, history=[]):
+    def chat(self, message, history=[], chat_id=None):
+        if chat_id:
+            history = get_chat_history(chat_id)
+        else:
+            chat_id = str(uuid.uuid4())
+            history = []
+
+        print("DEBUG: message =", history, flush=True)
+    
         messages = [{"role": "system", "content": self.system_prompt()}] + history + [{"role": "user", "content": message}]
         done = False
         while not done:
@@ -93,4 +107,10 @@ class ChatAgent:
                 messages.extend(self.handle_tool_call(tool_calls))
             else:
                 done = True
+
+        assistant_reply = response.choices[0].message.content
+        history.append({"role": "user", "content": message})
+        history.append({"role": "assistant", "content": assistant_reply})
+        save_chat_history(chat_id, history)
+
         return response.choices[0].message.content

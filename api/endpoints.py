@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
-from api.chat_agent import ChatAgent
+from services.chat_agent import ChatAgent
 
 load_dotenv()
 agent = ChatAgent()
@@ -22,9 +22,7 @@ async def chat_endpoint(request: Request, chat_id: str):
         if not message:
             return JSONResponse(content={"error": "Missing 'message'"}, status_code=400)
 
-        print("DEBUG: message =", chat_id, flush=True)
-
-        result = agent.chat(message, history)
+        result = agent.chat(message, history, chat_id)
 
         return {"response": result}
 
