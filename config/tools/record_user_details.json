@@ -1,0 +1,15 @@
+
+{
+    "name": "record_user_details",
+    "description": "Use this tool to record that a user is interested in being in touch and provided an email address",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "email": {"type": "string", "description": "The email address of this user"},
+            "name": {"type": "string", "description": "The user's name, if they provided it"},
+            "notes": {"type": "string", "description": "Any additional information"}
+        },
+        "required": ["email"],
+        "additionalProperties": false
+    }
+}
