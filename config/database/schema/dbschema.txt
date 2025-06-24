@@ -1,0 +1,71 @@
+Table: AppUser
+- AppUserId (PK, int, identity)
+- Username (nvarchar(50), not null)
+- Email (nvarchar(50), not null)
+- EmailConfirmed (bit, not null)
+- LastName (nvarchar(50), not null)
+- FirstName (nvarchar(50), not null)
+- MiddleName (nvarchar(50), nullable)
+- LastLoggedIn (datetime, nullable)
+- AccessFailedCount (int, not null)
+- PasswordHash (nvarchar(100), nullable)
+- ForgotPasswordUrlParam (nvarchar(2000), nullable)
+- ForgotPasswordExpiryDate (datetime, nullable)
+- AccessLevelId (FK -> AccessLevel.Id, int, nullable)
+- RegionId (FK -> Region.RegionId, int, nullable)
+- IsLocalNetworkUser (bit, nullable)
+- IsActive (bit, not null)
+- CreatedByAppUserId (FK -> AppUser.AppUserId, int, nullable)
+- CreatedOn (datetime, nullable)
+- ModifiedByAppUserId (FK -> AppUser.AppUserId, int, nullable)
+- ModifiedOn (datetime, nullable)
+- SessionId (nvarchar(max), nullable)
+- LoggedIn (bit, not null, default = 0)
+- DeletedByAppUserId (FK -> AppUser.AppUserId, int, nullable)
+- DeletedOn (datetime, nullable)
+- IsDeleted (bit, not null, default = 0)
+- Department (nvarchar(255), nullable)
+- LockoutEnd (datetimeoffset(7), nullable)
+
+Table: AppUserUserGroup
+- AppUserId (PK, FK -> AppUser.AppUserId, int)
+- UserGroupId (PK, FK -> UserGroup.UserGroupId, int)
+
+Table: Tag
+- TagId (PK, int, identity)
+- Name (nvarchar(200), not null)
+- Description (nvarchar(500), nullable)
+- Color (nvarchar(7), nullable)
+- IsActive (bit, not null, default = 1)
+- CreatedOn (datetime, not null, default = getdate())
+- CreatedByAppUserId (FK -> AppUser.AppUserId, int, nullable)
+- ModifiedByAppUserId (FK -> AppUser.AppUserId, int, nullable)
+- ModifiedOn (datetime, nullable)
+
+Table: UserGroup
+- UserGroupId (PK, int, identity)
+- Name (nvarchar(50), not null)
+- Description (nvarchar(500), nullable)
+- IsActive (bit, not null)
+- CreatedByAppUserId (FK -> AppUser.AppUserId, int, nullable)
+- CreatedOn (datetime, not null)
+- ModifiedByAppUserId (FK -> AppUser.AppUserId, int, nullable)
+- ModifiedOn (datetime, nullable)
+- SessionTimeoutMinutes (int, nullable)
+- SessionWarningSeconds (int, nullable)
+
+
+Table: AccessLevel
+- Id (PK, int, identity)
+- Name (nvarchar, assumed)
+- Description (nvarchar, assumed)
+
+Table: Region
+- RegionId (PK, int, identity)
+- Name (nvarchar, assumed)
+- Description (nvarchar, assumed)
+
+Table: Permission
+- PermisssionId (PK, int, identity)
+- Name (nvarchar, assumed)
+- Description (nvarchar, assumed)

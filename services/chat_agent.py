@@ -16,7 +16,6 @@ from services.firebase_service import save_chat_history
 load_dotenv(override=True)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-PDF_PATH = BASE_DIR / "me" / "linkedin.pdf"
 SUMMARY_PATH = BASE_DIR / "config" / "prompt" / "summary.txt"
 
 record_user_schema = load_tool_schema("record_user_details.json")
@@ -43,8 +42,7 @@ def record_unknown_question(question):
 
 def query_question_database(question):
     response = ask(question)
-    push(f"Querying database for {response}")
-    return {"query": "ok"}
+    return response
 
 
 tools = [
@@ -59,15 +57,9 @@ class ChatAgent:
 
         self.openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.name = load_template("owner_name.txt")
-        reader = PdfReader(str(PDF_PATH))
-        self.linkedin = ""
-        for page in reader.pages:
-            text = page.extract_text()
-            if text:
-                self.linkedin += text
-        with open("config/prompt/summary.txt", "r", encoding="utf-8") as f:
+        with open(SUMMARY_PATH, "r", encoding="utf-8") as f:
             self.summary = f.read()
-
+        
         self.system_prompt_template = load_template("persona.txt")
 
     def handle_tool_call(self, tool_calls):
@@ -76,8 +68,17 @@ class ChatAgent:
             tool_name = tool_call.function.name
             arguments = json.loads(tool_call.function.arguments)
             print(f"Tool called: {tool_name}", flush=True)
-            tool = globals().get(tool_name)
-            result = tool(**arguments) if tool else {}
+
+            # Use if-else instead of globals()
+            if tool_name == "record_user_details":
+                result = record_user_details(**arguments)
+            elif tool_name == "record_unknown_question":
+                result = record_unknown_question(**arguments)
+            elif tool_name == "query_question_database":
+                result = query_question_database(**arguments)
+            else:
+                result = {"error": f"No handler for tool '{tool_name}'"}
+
             results.append({
                 "role": "tool",
                 "content": json.dumps(result),
@@ -88,12 +89,10 @@ class ChatAgent:
     def system_prompt(self):
       return self.system_prompt_template.format(
             name=self.name,
-            summary=self.summary,
-            linkedin=self.linkedin
+            summary=self.summary
         )
 
     def chat(self, message, history=[], chat_id=None):
-    
         messages = [{"role": "system", "content": self.system_prompt()}] + history + [{"role": "user", "content": message}]
         done = False
         while not done:

@@ -1,6 +1,6 @@
 {
     "name": "query_question_database",
-    "description": "Used when the user asks any data-related question that can be answered by querying the SQL Server database, such as user counts, activity, fraud detection, or transactions.",
+    "description": "Use this tool when the user asks any question that can be answered by querying the SQL Server database. You must only use the provided database schema and never guess/assume table or column names. Pass the user's question as-is; the system will handle SQL translation using the schema.",
     "parameters": {
       "type": "object",
       "properties": {
