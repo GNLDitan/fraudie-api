@@ -6,11 +6,16 @@ import os
 # Load the Firebase key
 BASE_DIR = Path(__file__).resolve().parent.parent
 FIREBASE_CREDENTIAL_PATH = BASE_DIR / "firestore" / os.getenv("FIRESTORE_PK")
+    
 
 # Initialize the Firebase app only once
-if not firebase_admin._apps:
-    cred = credentials.Certificate(FIREBASE_CREDENTIAL_PATH)
-    firebase_admin.initialize_app(cred)
+try:
+    if not firebase_admin._apps:
+        cred = credentials.Certificate(FIREBASE_CREDENTIAL_PATH)
+        firebase_admin.initialize_app(cred)
+        print("✅ Firebase initialized successfully")
+except Exception as e:
+    print("Firebase init error:", e)
 
 # Firestore client
 db = firestore.client()

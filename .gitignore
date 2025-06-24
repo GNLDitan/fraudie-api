@@ -1,3 +1,79 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.env/
 .venv/
-firebase/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment variable files
+*.env
+.env.*
 .env
+
+# PyInstaller
+*.spec
+dist/
+build/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# VSCode
+.vscode/
+
+# PyCharm
+.idea/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs and debug
+*.log
+
+# Coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Test results
+test-results/
+.junit/
+
+# Mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre
+.pyre/
+
+# Pytype
+.pytype/
+
+# Cython build
+cython_debug/
+
+# Pydantic compiled cache
+__pydantic__/ 
+
+# Firebase credentials or secrets (example)
+firestore/*.json

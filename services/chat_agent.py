@@ -10,7 +10,7 @@ import requests
 from pypdf import PdfReader
 
 from helper.load_tool_schema import load_tool_schema, load_template
-from services.firebase_service import get_chat_history, save_chat_history
+from services.firebase_service import save_chat_history
 
 load_dotenv(override=True)
 
@@ -85,13 +85,6 @@ class ChatAgent:
         )
 
     def chat(self, message, history=[], chat_id=None):
-        if chat_id:
-            history = get_chat_history(chat_id)
-        else:
-            chat_id = str(uuid.uuid4())
-            history = []
-
-        print("DEBUG: message =", history, flush=True)
     
         messages = [{"role": "system", "content": self.system_prompt()}] + history + [{"role": "user", "content": message}]
         done = False
@@ -102,6 +95,7 @@ class ChatAgent:
                 tools=tools
             )
             if response.choices[0].finish_reason == "tool_calls":
+                print("DEBUG: tool_calls =", response.choices[0].finish_reason , flush=True)
                 tool_calls = response.choices[0].message.tool_calls
                 messages.append(response.choices[0].message)
                 messages.extend(self.handle_tool_call(tool_calls))
@@ -112,5 +106,4 @@ class ChatAgent:
         history.append({"role": "user", "content": message})
         history.append({"role": "assistant", "content": assistant_reply})
         save_chat_history(chat_id, history)
-
         return response.choices[0].message.content
