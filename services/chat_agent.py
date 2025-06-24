@@ -10,6 +10,7 @@ import requests
 from pypdf import PdfReader
 
 from helper.load_tool_schema import load_tool_schema, load_template
+from services.database_agent import ask
 from services.firebase_service import save_chat_history
 
 load_dotenv(override=True)
@@ -20,6 +21,7 @@ SUMMARY_PATH = BASE_DIR / "config" / "prompt" / "summary.txt"
 
 record_user_schema = load_tool_schema("record_user_details.json")
 record_unknown_schema = load_tool_schema("record_unknown_question.json")
+query_question_schema = load_tool_schema("query_question_database.json")
 
 def push(text):
     requests.post(
@@ -39,17 +41,23 @@ def record_unknown_question(question):
     push(f"Recording {question}")
     return {"recorded": "ok"}
 
+def query_question_database(question):
+    response = ask(question)
+    push(f"Querying database for {response}")
+    return {"query": "ok"}
 
-tools = [{"type": "function", "function": record_user_schema},
-         {"type": "function", "function": record_unknown_schema}]
+
+tools = [
+    {"type": "function", "function": query_question_schema},
+    {"type": "function", "function": record_user_schema},
+    {"type": "function", "function": record_unknown_schema}
+]
 
 class ChatAgent:
     def __init__(self):
         print("DEBUG: message =", os.getenv("OPENAI_API_KEY"), flush=True)
 
         self.openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-
         self.name = load_template("owner_name.txt")
         reader = PdfReader(str(PDF_PATH))
         self.linkedin = ""

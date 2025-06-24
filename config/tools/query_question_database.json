@@ -1,0 +1,15 @@
+{
+    "name": "query_question_database",
+    "description": "Used when the user asks any data-related question that can be answered by querying the SQL Server database, such as user counts, activity, fraud detection, or transactions.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "question": {
+          "type": "string",
+          "description": "The user's question in natural language"
+        }
+      },
+      "required": ["question"],
+      "additionalProperties": false
+    }
+  }
