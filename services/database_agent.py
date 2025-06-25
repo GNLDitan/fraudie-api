@@ -21,8 +21,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 CONFIG_PATH = BASE_DIR / "config"
 SCHEMA_PATH = CONFIG_PATH / "database" / "schema" / "dbschema.txt"
-MESSAGE_PATH = CONFIG_PATH / "agent_message.json"
-
+SQL_EXPERT_PATH = CONFIG_PATH / "prompt" / "sql_expert.txt"
 
 # Connection setup
 def get_connection():
@@ -40,13 +39,15 @@ def get_connection():
 def generate_sql_from_question(question: str) -> str:
     with open(SCHEMA_PATH, "r", encoding="utf-8") as s:
         schema = s.read()
-    with open(MESSAGE_PATH, "r", encoding="utf-8") as s:
-        system_messages = json.load(s)
+    with open(SQL_EXPERT_PATH, "r", encoding="utf-8") as s:
+        sql_expert = s.read()
 
+
+    print("DEBUG: modified_prompt =", sql_expert, flush=True)
     response = openai.chat.completions.create(
         model="gpt-4",
         messages=[
-            {"role": "system", "content": system_messages["agent_query"]["message"]},
+            {"role": "system", "content": sql_expert},
             {"role": "user", "content":  f"Schema:\n{schema}" },
             {"role": "user", "content": f"Convert to SQL: {question}"}
         ]
@@ -54,18 +55,44 @@ def generate_sql_from_question(question: str) -> str:
     sql = response.choices[0].message.content.strip()
     return sql
 
+
 # Execute SQL and return results
 def execute_sql(query: str):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(query)
-    print("DEBUG: cursor.execute =", cursor, flush=True)
-    columns = [column[0] for column in cursor.description]
-    print("DEBUG: cursor.columns =", columns, flush=True)
-    results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-    cursor.close()
-    conn.close()
-    return results
+    try:
+        conn = get_connection()
+        if not conn:
+           print("ERROR: Unexpected error:", conn, flush=True)
+
+        cursor = conn.cursor()
+        cursor.execute(query)
+
+        print("DEBUG: cursor.execute =", cursor, flush=True)
+
+        if not cursor.description:
+            return []  # No data returned
+
+        columns = [column[0] for column in cursor.description]
+        print("DEBUG: cursor.columns =", columns, flush=True)
+
+        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        print("DEBUG: cursor.results =", results, flush=True)
+
+        return results
+
+    except pyodbc.Error as e:
+        print("ERROR: pyodbc error:", e, flush=True)
+
+    except Exception as e:
+        print("ERROR: Unexpected error:", e, flush=True)
+
+    finally:
+        try:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+        except:
+            pass
 
 def format_readable_answer(question: str, result: list[dict]):
     prompt = load_template("query_assistant.txt")
