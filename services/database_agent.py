@@ -16,12 +16,25 @@ SQL_DATABASE = os.getenv("SQL_DATABASE")
 SQL_USER = os.getenv("SQL_USER")
 SQL_PASSWORD = os.getenv("SQL_PASSWORD")
 
+
 # Setup OpenAI key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 CONFIG_PATH = BASE_DIR / "config"
+PROMPT_PATH = CONFIG_PATH / "prompt"
+
 SCHEMA_PATH = CONFIG_PATH / "database" / "schema" / "dbschema.txt"
-SQL_EXPERT_PATH = CONFIG_PATH / "prompt" / "sql_expert.txt"
+SQL_EXPERT_PATH = PROMPT_PATH / "sql_expert.txt"
+STRICT_CLASSIFIER_PATH = PROMPT_PATH / "strict_classifier.txt"
+
+SQL_EXPERT_PATHS = {
+    "user": PROMPT_PATH / "db/sql_user_expert.txt",
+    "member": PROMPT_PATH /"db/sql_member_expert.txt",
+    "transaction": PROMPT_PATH / "db/sql_transaction_expert.txt",
+    "group": PROMPT_PATH / "db/sql_group_expert.txt",
+    "unknown": PROMPT_PATH / "db/sql_fallback_expert.txt"
+}
+
 
 # Connection setup
 def get_connection():
@@ -36,24 +49,61 @@ def get_connection():
 
 
 # Ask LLM to convert user question to SQL
-def generate_sql_from_question(question: str) -> str:
+def generate_sql_from_question(question: str, domain: str) -> str:
     with open(SCHEMA_PATH, "r", encoding="utf-8") as s:
         schema = s.read()
-    with open(SQL_EXPERT_PATH, "r", encoding="utf-8") as s:
-        sql_expert = s.read()
+        
+    prompt_path = SQL_EXPERT_PATHS.get(domain, SQL_EXPERT_PATHS["unknown"])
+    with open(prompt_path, "r", encoding="utf-8") as f:
+        sql_prompt = f.read()
 
-
-    print("DEBUG: modified_prompt =", sql_expert, flush=True)
+    print("DEBUG: using prompt for domain:", domain, flush=True)
+    
     response = openai.chat.completions.create(
         model="gpt-4",
         messages=[
-            {"role": "system", "content": sql_expert},
-            {"role": "user", "content":  f"Schema:\n{schema}" },
+            {"role": "system", "content": sql_prompt},
+            {"role": "user", "content": f"Schema:\n{schema}"},
             {"role": "user", "content": f"Convert to SQL: {question}"}
         ]
     )
     sql = response.choices[0].message.content.strip()
     return sql
+
+
+def classify_question_domain(question: str) -> str:
+    try:
+        with open(STRICT_CLASSIFIER_PATH, "r", encoding="utf-8") as s:
+            strict_classifier = s.read()
+
+        response = openai.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": strict_classifier},
+                {"role": "user", "content": question}
+            ]
+        )
+        content = response.choices[0].message.content.strip()
+
+        # Try parsing response JSON
+        parsed = json.loads(content)
+        domain = parsed.get("domain", "unknown")
+
+        if domain not in ["user", "member", "transaction", "group", "unknown"]:
+            print(f"WARNING: Invalid domain received: {domain}. Defaulting to 'unknown'.", flush=True)
+            return "unknown"
+
+        print("DEBUG: classified domain =", domain, flush=True)
+        return domain
+    
+    except json.JSONDecodeError:
+        print("ERROR: LLM did not return valid JSON. Defaulting to 'unknown'. Content:", content, flush=True)
+        return "unknown"
+
+    except Exception as e:
+        print("ERROR: Unexpected classification error:", e, flush=True)
+        return "unknown"
+
 
 
 # Execute SQL and return results
@@ -109,9 +159,10 @@ def format_readable_answer(question: str, result: list[dict]):
 
 # Combined: question -> SQL -> result
 def ask(question: str):
-    print("DEBUG: sql =", question, flush=True)
+    domain = classify_question_domain(question)
+    print("DEBUG: classified domain =", domain, flush=True)
     # Call Ai Convert question to SQL
-    sql = generate_sql_from_question(question)
+    sql = generate_sql_from_question(question, domain)
     print("DEBUG: sql =", sql, flush=True)
     # Execute SQL
     executed = execute_sql(sql)
